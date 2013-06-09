@@ -1,0 +1,262 @@
+<!doctype html>
+<html>
+<head>
+    <title>Twitter</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            font-size: small;
+            color: #333;
+            height: 100%;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        .container {
+            width: 800px;
+            margin: 50px 100px;
+        }
+        #tweets {
+            display: inline;
+            float: left;
+            width: 500px;
+            margin: 20px 30px 50px 20px;
+        }
+        .tweet {
+            padding: 20px;
+            border-top: 1px solid #ddd;
+            line-height: 1.7em;
+        }
+        .imgp {
+            border: 5px solid #fff;
+            box-shadow: 0px 0px 3px #333;
+            display: inline; 
+            float: left;
+        }
+        .sbox {
+            display: inline-block;
+            margin-left: 10px;
+            width: 370px; 
+        }
+        .user {
+            font-weight: bold;
+        }
+        .screen {
+            color: #777;
+        }
+        .hover {
+            cursor: pointer;
+            box-shadow: 0px 0px 3px #666;
+            border: none;
+            background-color: #333;
+            color: #aaa;
+        }
+        #modal {
+            display: none;
+        }
+        #abs {
+            position: fixed;
+            top: 0px;
+            left: 0px;
+            background-color: #000;
+            height: 100%;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            filter: alpha(opacity=80);
+            opacity: 0.8;
+            z-index: 999;
+        }
+        #tdetails {
+            padding: 20px;
+            width: 500px;
+            background-color: #fff;
+            box-shadow: 0px 0px 5px #000;
+            color: #555;
+            position: fixed;
+            z-index: 1000;
+            opacity: 1 !important;
+            top: 300px;
+            left: 50%;
+            margin-left: -250px;
+            text-align: right;
+        }
+        .hl {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: green;
+        }
+        #tstat {
+            font-size: 1.5em;
+            font-family: sans;
+            font-style: italic; 
+            line-height: 1.8em;
+            text-align: left;
+        }
+        a:link, a:active, a:hover, a:visited {
+            color: #fff;
+            text-decoration: none;
+            background-color: green;
+            padding: 10px;
+            display: block;
+            margin: 10px;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: x-small;
+            font-weight: bold;
+        }
+        #crt {
+            font-size: x-small;
+            color: #999;
+        }
+        #upd {
+            width: 500px;
+            position: fixed;
+            top: 70px;
+            left: 700px; 
+        }
+        #txt {
+            width: 458px;
+            margin: auto;
+            padding: 20px;
+            font-family: sans-serif;
+            resize: none;
+            outline: none;
+            overflow: auto;
+        }
+        #stp {
+            display: none;
+            width: 100px;
+            color: #fff;
+            text-align: center;
+            font-size: x-small;
+            background-color: green;
+            position: fixed;
+            top: 0;
+            left: 50%;
+            margin-left: -50px;
+            padding: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+            border: 4px solid #fff;
+            box-shadow: 0px 2px 3px #666;
+            border-bottom-right-radius: 6px;
+            border-bottom-left-radius: 6px;
+        }
+        .error {
+            background-color: red;
+        }
+    </style>
+    <script src="js/jquery.js"></script>
+    <script>
+        $(document).on('ready', function() {
+            function addToTimeline(data, prepend) {
+                prepend = typeof prepend !== 'undefined' ? prepend : false;
+
+                var out = "";
+                out += '<tr class="trt">';
+                out += '<td class="tweet" id="' + data.id_str + '">';
+                out += '<img class="imgp" src="' + data.user.profile_image_url + '" />';
+                out += '<span class="sbox">';
+                out += '<span class="user">' + data.user.name + '</span> ';
+                out += '<span class="screen">@' + data.user.screen_name + '</span><br />';
+                out += '<span class="status">' + data.text + '</span>';
+                out += '</span>';
+                out += '</td>';
+                out += '</tr>';
+                var toAdd = $(out).hide();
+                if (prepend) {
+                    $('#tweets').prepend(toAdd);
+                } else {
+                    $('#tweets').append(toAdd);
+                }
+                toAdd.fadeIn(1000);
+            }
+
+            $(document).on('mouseover', '.tweet', function() {
+                $(this).addClass('hover');
+            });
+            
+            
+            $.get('/tweets', {}, function(data) {
+                $('#loader').fadeOut(1000, function() {
+                    for(var i in data) {
+                        addToTimeline(data[i]);
+                    }
+                });
+            });
+            $(document).on('mouseout', '.tweet', function() {
+                $(this).removeClass('hover');
+            });
+
+            $(document).on('click', '.tweet', function(e) {
+                e.preventDefault();
+                $.get('/tweets/' + $(this).attr('id'), {}, function(data) {
+                    $('#uname').text(data.user.name);
+                    $('#usname').text('@' + data.user.screen_name);
+                    $('#uimg').attr('src', data.user.profile_image_url);
+                    $('#flw').text(data.user.friends_count);
+                    $('#flb').text(data.user.followers_count);
+                    $('#twc').text(data.user.statuses_count);
+                    $('#tstat').text(data.text);
+                    $('#crt').text(data.created_at);
+                    $('#modal').fadeIn('fast');
+                });
+            });
+
+            $('#close').click(function(e) {
+                e.preventDefault();
+                $('#modal').fadeOut('fast');
+            });
+
+            $('#ust').click(function(e) {
+                e.preventDefault();
+                if ($('#txt').val() !== "") {
+                    $.post('/tweets', { status : $('#txt').val() }, function(data) {
+                        if (data.id !== undefined) {
+                            $('#txt').val('');
+                            $('#stp p').text('Tweet sent');
+                            $('#stp').removeClass('error');
+                            addToTimeline(data, true);
+                        } else {
+                            $('#stp p').text('Tweet failed');
+                            $('#stp').addClass('error');    
+                        }
+                        $('#stp').slideDown(300).delay(2000).slideUp(300);
+                    });
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+    <div id="stp">
+        <p></p>
+    </div>
+    <div id="modal">
+        <div id="abs">
+        </div>
+        <div id="tdetails">
+            <img id="uimg" class="imgp">
+            <span class="user" id="uname"></span> <span class="screen" id="usname"></span><br />
+            Following <span id="flw" class="hl"></span> tweeple<br />
+            Followed by <span id="flb" class="hl"></span> more tweeple<br />
+            Has <span id="twc" class="hl"></span> tweets in total<br />
+            <p id="tstat"></p>
+            <span id="crt"></span>
+            <p><a href="#" id="close">close</a></p>
+        </div>
+    </div>
+    <div class="container">
+        <table id="tweets">
+            <tr id="loader">
+                <td style="text-align: center;">Loading tweets.. Please wait.</td>
+            </tr>
+        </table>
+        <form id="upd">
+            <textarea placeholder="Update your status" id="txt" name="status"></textarea>
+            <a href="#" id="ust">update</a>
+        </form>
+    </div>
+</body>
+</html>
